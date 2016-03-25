@@ -806,15 +806,18 @@ class MySql(AgentCheck):
         # Whether InnoDB engine is available or not can be found out either
         # from the output of SHOW ENGINES or from information_schema.ENGINES
         # table. Later is choosen because that involves no string parsing.
-        with closing(db.cursor()) as cursor:
-            cursor.execute(
-                "select engine from information_schema.ENGINES where engine='InnoDB' and \
-                support not like 'no' and support not like 'disabled'"
-            )
+        try:
+            with closing(db.cursor()) as cursor:
+                cursor.execute(
+                    "select engine from information_schema.ENGINES where engine='InnoDB' and \
+                    support not like 'no' and support not like 'disabled'"
+                )
 
-            return_val = True if cursor.rowcount > 0 else False
+                return (cursor.rowcount > 0)
 
-            return return_val
+        except (pymysql.err.InternalError, pymysql.err.OperationalError) as e:
+            self.warning("Possibly innodb stats unavailable - error querying engines table: %s" % str(e))
+            return False
 
     def _get_replica_stats(self, db):
         try:
