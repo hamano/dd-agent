@@ -410,7 +410,7 @@ class MySql(AgentCheck):
         results = self._get_stats_from_status(db)
         results.update(self._get_stats_from_variables(db))
 
-        if self._is_innodb_engine_enabled(db):
+        if (not _is_affirmative(options.get('disable_innodb_metrics', False)) and self._is_innodb_engine_enabled(db)):
             results.update(self._get_stats_from_innodb_status(db))
 
             innodb_keys = [
@@ -869,8 +869,9 @@ class MySql(AgentCheck):
                 cursor.execute("SHOW /*!50000 ENGINE*/ INNODB STATUS")
                 innodb_status = cursor.fetchone()
                 innodb_status_text = innodb_status[2]
-        except (pymysql.err.InternalError, pymysql.err.OperationalError) as e:
-            self.warning("Privilege error accessing the INNODB status tables (must grant PROCESS): %s" % str(e))
+        except (pymysql.err.InternalError, pymysql.err.OperationalError, pymysql.err.NotSupportedError) as e:
+            self.warning("Privilege error or engine unavailable accessing the INNODB status \
+                         tables (must grant PROCESS): %s" % str(e))
             return {}
 
         results = defaultdict(int)
