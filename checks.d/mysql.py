@@ -815,7 +815,7 @@ class MySql(AgentCheck):
 
                 return (cursor.rowcount > 0)
 
-        except (pymysql.err.InternalError, pymysql.err.OperationalError) as e:
+        except (pymysql.err.InternalError, pymysql.err.OperationalError, pymysql.err.NotSupportedError) as e:
             self.warning("Possibly innodb stats unavailable - error querying engines table: %s" % str(e))
             return False
 
